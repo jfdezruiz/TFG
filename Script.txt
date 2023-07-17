@@ -1,0 +1,40 @@
+$sSearchBase="OU=Delegaciones,DC=company,DC=local"
+$ListUsers=Import-CSV ".\usuarios.txt" -Delimiter ";"
+ 
+
+foreach($sUser in $ListUsers){
+
+    $sName=$sUser.Name
+    $sSurname=$sUser.SurName
+    $sUid=$sUser.Login
+    $sPass=$sUser.Pass
+    $sDescription=$sUser.Description
+    $sFullName=($sName + " " + $sSurname).Trim()
+    $sEmail=$sUser.eMail
+    $sTfno=$sUser.Tfno
+    $sUserPrincipialName= $sUid + "@company.local"
+    $sDni=$sUser.DNI
+
+ 
+    $OU=Get-ADOrganizationalUnit -Filter $sFilter  -SearchScope Subtree -SearchBase $sSearchBase
+    $sPath=$ou.DistinguishedName
+
+    $oADUser=New-ADUser  -UserPrincipalName $sUserPrincipialName -DisplayName $sFullName -GivenName $sName -Surname $sSurname -name $sFullName -SamAccountName $sUid - `
+        -accountPassword (ConvertTo-SecureString -AsPlainText $sPass -Force) -passThru  `
+        -Path $sPath -server "servidor.company.local"  `
+        -Enabled $True -Description $sDescription -EmailAddress $sEmail -MobilePhone $sTfno  -ChangePasswordAtLogon $True -CannotChangePassword $False -PasswordNeverExpires $False
+
+    
+    $oADUser | SET-ADUSER john.smith –replace @{info=$sDni}
+    Write-Host -ForegroundColor Green $sUid  $sFullName
+   
+    $oParentGroup=Get-ADGroup -filter {name -like "GrG_*"} -SearchBase $sPath -SearchScope OneLevel
+  
+    $oParentGroup|Add-ADGroupMember -Members $oADUser -server  "servidor.xxx"
+
+ 
+
+#####################################################################################################
+formato del fichero usuarios.txt
+Login;Name;Surname;DNI;Pass;Description;Tfno;eMail;
+mmcc2x;Nombre;Apellidos;11111111X;Temp2020@;Descripcion;609000000,mail@company.es;
